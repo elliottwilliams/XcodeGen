@@ -186,22 +186,12 @@ extension SettingsPresetFile {
         if let cached = settingPresetSettings[path] {
             return cached.value
         }
-        let bundlePath = Path(Bundle.main.bundlePath)
-        let relativePath = Path("SettingPresets/\(path).yml")
-        var possibleSettingsPaths: [Path] = [
-            relativePath,
-            bundlePath + relativePath,
-            bundlePath + "../share/xcodegen/\(relativePath)",
-            Path(#file).parent().parent().parent() + relativePath,
-        ]
-
-        if let symlink = try? (bundlePath + "xcodegen").symlinkDestination() {
-            possibleSettingsPaths = [
-                symlink.parent() + relativePath,
-            ] + possibleSettingsPaths
-        }
-
-        guard let settingsPath = possibleSettingsPaths.first(where: { $0.exists }) else {
+        
+        guard let settingsPath = Bundle.module.path(
+                forResource: path,
+                ofType: "yml",
+                inDirectory: "SettingPresets"
+        ) else {
             switch self {
             case .base, .config, .platform:
                 print("No \"\(name)\" settings found")
@@ -212,7 +202,7 @@ extension SettingsPresetFile {
             return nil
         }
 
-        guard let buildSettings = try? loadYamlDictionary(path: settingsPath) else {
+        guard let buildSettings = try? loadYamlDictionary(path: Path(settingsPath)) else {
             print("Error parsing \"\(name)\" settings")
             return nil
         }
